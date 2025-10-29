@@ -142,18 +142,45 @@ st.set_page_config(page_title="LenDenWebApp 💰", layout="centered")
 # Custom CSS
 st.markdown("""
     <style>
-    .stApp {background: linear-gradient(135deg, #FFDAB9, #E0FFFF); font-family: 'Arial Black', sans-serif;}
-    .title {text-align:center; font-size:45px; font-weight:bold; color:#FF4500; text-shadow:2px 2px 5px #FFA07A;}
-    .sub {text-align:center; font-size:20px; font-weight:bold; color:#008B8B; text-shadow:1px 1px 3px #20B2AA;}
-    .green-bold {color:#008000; font-weight:bold; background-color:#E0FFE0; padding:2px 5px; border-radius:5px;}
-    .red-bold {color:#FF0000; font-weight:bold; background-color:#FFE0E0; padding:2px 5px; border-radius:5px;}
-    .form-button-green {background-color:#32CD32 !important; color:white !important; font-weight:bold; border-radius:5px; height:40px;}
+    .stApp {
+        background: linear-gradient(135deg, #E6E6FA, #F3E6FF);  /* Light purple gradient */
+        font-family: 'Arial Black', sans-serif;
+    }
+    .stApp * {
+        color: #000000 !important;  /* All text black */
+        font-weight: bold !important; /* All text bold */
+    }
+    .title {text-align:center; font-size:45px; color:#000000; text-shadow:none;}
+    .sub {text-align:center; font-size:20px; color:#000000; text-shadow:none;}
+    
+    /* Balance & Paid colors - darker shades */
+    .green-bold {color:#006400; font-weight:bold; background-color:#E0FFE0; padding:2px 5px; border-radius:5px;}  /* Darker green */
+    .red-bold {color:#8B0000; font-weight:bold; background-color:#FFE0E0; padding:2px 5px; border-radius:5px;}    /* Darker red */
+    
+    /* Buttons style */
+    button, .stButton>button {
+        background-color:#1E90FF !important;  /* Blue buttons */
+        color:#FFFFFF !important;             /* White text */
+        font-weight:bold !important;
+        border-radius:5px;
+        height:40px;
+    }
+    .form-button-green {background-color:#1E90FF !important; color:white !important; font-weight:bold; border-radius:5px; height:40px;}
     .form-button-blue {background-color:#1E90FF !important; color:white !important; font-weight:bold; border-radius:5px; height:40px;}
-    .stTextInput>div>div>input {border-radius:10px; border:2px solid #20B2AA;}
-    .stNumberInput>div>div>input {border-radius:10px; border:2px solid #20B2AA;}
-    .developer-sign {position: fixed; top: 10px; right: 20px; font-weight:bold; color:#8B0000; z-index:999;}
-    </style>
+    
+    /* Inputs style */
+    .stTextInput>div>div>input, .stNumberInput>div>div>input {
+        border-radius:10px; border:2px solid #20B2AA; background-color:#FFFFFF; color:black; font-weight:bold;
+    }
+    .developer-sign {position: fixed; top: 10px; right: 20px; color:black; font-weight:bold; z-index:999;}
+</style>
 """, unsafe_allow_html=True)
+
+
+
+
+
+
 
 st.markdown("<div class='title'>💰 LenDenWebApp</div>", unsafe_allow_html=True)
 st.markdown("<div class='sub'>Simple and Secure Record Management</div>", unsafe_allow_html=True)
