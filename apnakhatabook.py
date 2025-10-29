@@ -1,11 +1,7 @@
 import streamlit as st
 import sqlite3
 from datetime import datetime
-from reportlab.pdfgen import canvas
-from reportlab import canvas
-from reportlab.lib.pagesizes import A4
-import tempfile
-import os
+import pandas as pd
 
 # -----------------------------
 # Database Setup
@@ -108,48 +104,34 @@ def delete_user(username):
 
 
 # -----------------------------
-# PDF Generator
+# CSV Generator (All Payee Histories)
 # -----------------------------
-def generate_all_pdf(username):
-    """Generate combined PDF of all payee histories for a user."""
+def generate_csv(username):
     c.execute("SELECT payee FROM records WHERE owner_username=? GROUP BY payee", (username,))
     payees = [p[0] for p in c.fetchall()]
-    temp_path = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf").name
-    pdf = canvas.Canvas(temp_path, pagesize=A4)
-    pdf.setTitle(f"{username}_All_History")
-
-    pdf.setFont("Helvetica-Bold", 16)
-    pdf.drawString(200, 800, f"LenDen - All Payee Records")
-    pdf.setFont("Helvetica", 12)
-    pdf.drawString(50, 780, f"User: {username}")
-    pdf.drawString(50, 765, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    y = 740
-
+    all_data = []
     for payee in payees:
-        pdf.setFont("Helvetica-Bold", 13)
-        pdf.drawString(50, y, f"Payee: {payee}")
-        y -= 20
         c.execute("SELECT received, paid_out, datetime, note FROM records WHERE owner_username=? AND payee=? ORDER BY datetime ASC",
                   (username, payee))
         recs = c.fetchall()
-        pdf.setFont("Helvetica", 11)
+        total_received = 0
+        total_paid = 0
         for r in recs:
-            try:
-                received = float(r[0] or 0)
-                paid = float(r[1] or 0)
-                text = f"Received: Rs.{received:.2f}, Paid: Rs.{paid:.2f}, Date: {r[2]}, Note: {r[3]}"
-                pdf.drawString(70, y, text[:110])
-                y -= 18
-                if y < 60:
-                    pdf.showPage()
-                    y = 800
-            except Exception as e:
-                pdf.drawString(70, y, f"[Error] {e}")
-                y -= 20
-        y -= 15
-
-    pdf.save()
-    return temp_path
+            received = float(r[0] or 0)
+            paid = float(r[1] or 0)
+            total_received += received - paid
+            total_paid += paid
+            all_data.append({
+                "Payee": payee,
+                "Received": received,
+                "Paid": paid,
+                "Balance": total_received,
+                "Total Paid": total_paid,
+                "Date": r[2],
+                "Note": r[3]
+            })
+    df = pd.DataFrame(all_data)
+    return df.to_csv(index=False).encode('utf-8')
 
 
 # -----------------------------
@@ -249,10 +231,9 @@ else:
                         for h in history:
                             st.write(f"Received: Rs.{h[1]:.2f}, Paid: Rs.{h[2]:.2f}, Note: {h[4]}, Date: {h[3]}")
 
-        # ✅ Combined PDF button
-        pdf_file = generate_all_pdf(st.session_state.username)
-        with open(pdf_file, "rb") as f:
-            st.download_button("📄 Download All Payee History (PDF)", f, file_name="All_Payee_History.pdf")
+        # ✅ CSV Download Button (All Payee Histories)
+        csv_data = generate_csv(st.session_state.username)
+        st.download_button("📄 Download All Records (CSV)", csv_data, file_name="All_Records.csv", mime="text/csv")
 
         # ✅ Add Record Form with Note
         with st.form("update_record_form"):
