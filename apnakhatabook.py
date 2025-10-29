@@ -2,6 +2,7 @@ import streamlit as st
 import sqlite3
 from datetime import datetime
 from reportlab.pdfgen import canvas
+from reportlab import canvas
 from reportlab.lib.pagesizes import A4
 import tempfile
 import os
