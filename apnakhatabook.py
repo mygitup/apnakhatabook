@@ -83,10 +83,8 @@ def get_records(owner):
 
 # Modify update_record to accept optional datetime
 def update_record(owner, received, paid_out, payee, note="", record_datetime=None):
-    # If no datetime is provided, use current datetime
     now = record_datetime.strftime("%Y-%m-%d %H:%M:%S") if record_datetime else datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    # Fetch last record for totals
     c.execute("SELECT * FROM records WHERE owner_username=? AND payee=? ORDER BY id DESC LIMIT 1",
               (owner, payee))
     last_record = c.fetchone()
@@ -188,12 +186,19 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.username = None
     st.session_state.role = None
+    st.session_state.show_reset = False
+    st.session_state.reset_user = None
 
 if not st.session_state.logged_in:
     tab1, tab2 = st.tabs(["🔐 Login", "📝 Signup"])
+
+    # -----------------------------
+    # Login + Reset Password Tab
+    # -----------------------------
     with tab1:
-        u = st.text_input("Username")
-        p = st.text_input("Password", type="password")
+        u = st.text_input("Username", key="login_username")
+        p = st.text_input("Password", type="password", key="login_password")
+
         if st.button("Login"):
             user = verify_user(u, p)
             if user:
@@ -205,15 +210,43 @@ if not st.session_state.logged_in:
             else:
                 st.error("❌ Invalid credentials")
 
+        # Reset Password Button
+        if st.button("Reset Password"):
+            if not u.strip():
+                st.warning("Enter your username first to reset password.")
+            else:
+                st.session_state.reset_user = u.strip()
+                st.session_state.show_reset = True
+
+        # Show Reset Password Input if requested
+        if st.session_state.show_reset and st.session_state.reset_user:
+            new_pass = st.text_input("Enter New Password", type="password", key="new_pass_input")
+            if st.button("Set New Password"):
+                if not new_pass.strip():
+                    st.warning("Password cannot be empty.")
+                else:
+                    c.execute("UPDATE users SET password=? WHERE username=?",
+                              (hash_password(new_pass.strip()), st.session_state.reset_user))
+                    conn.commit()
+                    st.success(f"✅ Password for '{st.session_state.reset_user}' reset successfully!")
+                    st.session_state.show_reset = False
+                    st.session_state.reset_user = None
+
+    # -----------------------------
+    # Signup Tab
+    # -----------------------------
     with tab2:
-        nu = st.text_input("New Username")
-        np = st.text_input("New Password", type="password")
+        nu = st.text_input("New Username", key="signup_username")
+        np = st.text_input("New Password", type="password", key="signup_password")
         if st.button("Signup"):
             if add_user(nu, np):
                 st.success("🎉 Account created!")
             else:
                 st.error("Username already exists")
 
+# -----------------------------
+# Main App after Login
+# -----------------------------
 else:
     st.sidebar.title("Menu")
     st.sidebar.write(f"👤 `{st.session_state.username}` ({st.session_state.role})")
@@ -222,7 +255,6 @@ else:
     if menu == "My Record":
         st.header("💼 My Record")
 
-        # Balance
         c.execute("SELECT SUM(received), SUM(paid_out) FROM records WHERE owner_username=?", 
                   (st.session_state.username,))
         rec = c.fetchone()
@@ -231,7 +263,6 @@ else:
 
         user_records = get_records(st.session_state.username)
 
-        # Search
         search_term = st.text_input("Search Payee")
         if search_term:
             user_records = [r for r in user_records if search_term.lower() in r[5].lower()]
@@ -255,7 +286,6 @@ else:
                     unsafe_allow_html=True
                 )
 
-                # History expander
                 with st.expander(f"Show History for {rec[5]}", expanded=False):
                     c.execute("SELECT id, received, paid_out, datetime, note FROM records WHERE owner_username=? AND payee=? ORDER BY datetime ASC",
                               (st.session_state.username, rec[5]))
@@ -266,19 +296,15 @@ else:
                             with col1:
                                 st.write(f"Received: Rs.{h[1]:.2f}, Paid: Rs.{h[2]:.2f}, Note: {h[4]}, Date: {h[3]}")
                             with col2:
-                                # show checkbox first, only show delete button when checked
                                 confirm_key = f"chk_{h[0]}"
                                 delete_key = f"del_{h[0]}"
                                 checked = st.checkbox("Confirm delete", key=confirm_key)
                                 if checked:
                                     if st.button("🗑 Delete", key=delete_key):
-                                        # delete only this single record (owner's record)
                                         delete_record_by_id(h[0])
                                         st.success("Deleted this record.")
                                         st.rerun()
 
-                        # Optional: Delete entire payee history (only this payee).
-                        # show checkbox first, then delete button (owner-only)
                         warning_text = "⚠️ Optional: Delete entire payee history (only this payee)."
                         st.warning(warning_text)
                         chkall_key = f"chkall_{rec[5]}_{st.session_state.username}"
@@ -290,19 +316,15 @@ else:
                                 st.success(f"All records for {rec[5]} deleted.")
                                 st.rerun()
 
-        # CSV Download
         csv_data = generate_csv(st.session_state.username)
         st.download_button("📄 Download All Records (CSV)", csv_data, file_name="All_Records.csv", mime="text/csv")
 
-        # Add Record
-       
         with st.form("update_record_form"):
             received = st.number_input("Add Received Amount", min_value=0.0, step=0.01)
             paid_out = st.number_input("Add Paid Out Amount", min_value=0.0, step=0.01)
             payee = st.text_input("Payee Name")
             note = st.text_input("Note (optional)")
 
-            # 👇 Added optional date/time picker
             from datetime import datetime as dt
             import datetime as datetime_module
 
@@ -318,11 +340,9 @@ else:
                 if not payee.strip():
                     st.warning("Enter payee name.")
                 else:
-                    # Pass the selected custom_datetime to the existing function
                     update_record(st.session_state.username, received, paid_out, payee.strip(), note, custom_datetime)
                     st.success("✅ Record added!")
-                    st.rerun()  
-
+                    st.rerun()
 
     elif menu == "All Records":
         if st.session_state.role == "admin":
