@@ -164,7 +164,7 @@ st.set_page_config(page_title="LenDenWebApp 💰", layout="centered")
 
 st.markdown("""
     <style>
-    .stApp { background: linear-gradient(135deg, #E6E6FA, #F3E6FF); font-family: 'Arial Black', sans-serif; }
+    .stApp { background: linear-gradient(135deg, #F0B2B1,#ABEDD5, #C7E663); font-family: 'Arial Black', sans-serif; }
     .title {text-align:center; font-size:45px;}
     .sub {text-align:center; font-size:20px;}
     .green-bold {color:#006400; background-color:#E0FFE0; padding:2px 5px; border-radius:5px;}
